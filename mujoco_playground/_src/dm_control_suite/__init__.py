@@ -34,6 +34,8 @@ from mujoco_playground._src.dm_control_suite import reacher
 from mujoco_playground._src.dm_control_suite import swimmer
 from mujoco_playground._src.dm_control_suite import walker
 
+from mujoco_playground._src.dm_control_suite import cyber_mice
+
 _envs = {
     "AcrobotSwingup": partial(acrobot.Balance, sparse=False),
     "AcrobotSwingupSparse": partial(acrobot.Balance, sparse=True),
@@ -59,6 +61,9 @@ _envs = {
     "HopperStand": partial(hopper.Hopper, hopping=False),
     "HumanoidStand": partial(humanoid.Humanoid, move_speed=0.0),
     "HumanoidWalk": partial(humanoid.Humanoid, move_speed=humanoid.WALK_SPEED),
+
+    "CyberMiceWalk": partial(cyber_mice.CyberMice, move_speed=cyber_mice.WALK_SPEED),
+
     "HumanoidRun": partial(humanoid.Humanoid, move_speed=humanoid.RUN_SPEED),
     "PendulumSwingup": pendulum.SwingUp,
     "PointMass": point_mass.PointMass,
@@ -89,6 +94,9 @@ _cfgs = {
     "HumanoidRun": humanoid.default_config,
     "HumanoidStand": humanoid.default_config,
     "HumanoidWalk": humanoid.default_config,
+
+    "CyberMiceWalk": cyber_mice.default_config,
+
     "PendulumSwingup": pendulum.default_config,
     "PointMass": point_mass.default_config,
     "ReacherEasy": reacher.default_config,

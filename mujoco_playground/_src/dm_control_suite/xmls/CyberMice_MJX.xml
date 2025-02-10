@@ -1,0 +1,715 @@
+<mujoco model="CyberMice">
+    <compiler meshdir="meshes" balanceinertia="true" angle="radian" eulerseq="xyz" />
+    
+    <option timestep="0.002" />
+    <size njmax="1000" nconmax="400" nkey="1" nuser_jnt="1" />
+    <statistic extent="1" />
+
+    
+    <default class="main">
+        <joint limited="true" stiffness=".0" armature="1e-05" damping="1e-05" />
+        <site rgba="0 0 0.8 1" size="0.0001 0.0001 0.0001" />
+        <tendon limited="false" width="0.0001" rgba="0.95 0.3 0.3 1" />
+        <default class="forelimbs">
+            <geom type="mesh" contype="3" conaffinity="2" friction="0.7" solref="0.015 1" solimp="0.95 0.99 0.003" material="bone" />
+        </default>
+        <default class="muscle">
+            <general ctrllimited="true" ctrlrange="0 1" dyntype="muscle" gaintype="muscle" biastype="muscle" dynprm="0.01 0.04 0 0 0 0 0 0 0 0" gainprm="0.75 1.05 -1 200 0.5 1.6 1.5 1.3 1.2 0" biasprm="0.75 1.05 -1 200 0.5 1.6 1.5 1.3 1.2 0" />
+        </default>
+        <default class="motor">
+            <general gainprm="5 0 0 0 0 0 0 0 0 0" />
+        </default>
+        <default class="sensor">
+            <site group="4" />
+        </default>
+
+        <default class="Lumbar">
+            <joint group="3" pos="0.003 0 -0.003" stiffness="0.1" armature="1e-05" damping="0.1"/>
+            <general gainprm="0.15"/>
+            <default class="Lumbar_x">
+                <joint range="-0.25 0.25"/>
+                <tendon range="-1 1"/>
+            </default>
+            <default class="Lumbar_y">
+                <joint range="-0.25 0.25"/>
+                <tendon range="-1 1"/>
+            </default>
+            <default class="Lumbar_z">
+                <joint range="-0.25 0.25"/>
+                <tendon range="-1 1"/>
+                <general gainprm="0.4"/>
+            </default>
+        </default>
+
+        <default class="Cervical">
+            <joint group="3" pos="-0.02 0 -0.05" stiffness="0.1" armature="0.001" damping="0.1"/>
+            <default class="Cervical_x">
+                <joint range="-0.18 0.18"/>
+                <tendon range="-1 1"/>
+                <general gainprm="2.5"/>
+            </default>
+            <default class="Cervical_y">
+                <joint range="-0.18 0.18"/>
+                <tendon range="-1 1"/>
+                <general gainprm="2.5"/>
+            </default>
+            <default class="Cervical_z">
+                <joint range="-0.18 0.18"/>
+                <tendon range="-1 1"/>
+                <general gainprm="2.5"/>
+            </default>
+        </default>
+
+        <default class="Caudal">
+            <joint group="3" stiffness="1e-05" damping="0.002"/>
+            <general gainprm="0.005"/>
+            <default class="Caudal_z">
+                <joint range="-0.08726646259971647 0.08726646259971647"/>
+                <tendon range="-0.05 0.05"/>
+            </default>
+            <default class="Caudal_y">
+                <joint range="-0.08726646259971647 0.08726646259971647"/>
+                <tendon range="-0.2 0.2"/>
+            </default>
+            <default class="Caudal_x">
+                <joint range="-0.08726646259971647 0.08726646259971647"/>
+                <tendon range="-0.2 0.2"/>
+            </default>
+        </default>
+
+        <default class="collision">
+            <geom contype="1" conaffinity="1" condim="1" group="1"/>
+            <default class="collision_primitive">
+                <geom type="capsule" group="1" rgba="0 0.5 0.5 0.5" density="500.0"/>
+                <default class="collision_primitive_paw">
+                    <geom condim="3" priority="1" rgba="0 0.6 0.7 0.5" friction="1.5 0.005 0.0001"/>
+                </default>
+                <default class="nonself_collision_primitive">
+                    <geom conaffinity="0" rgba="0 0.5 0.5 0.5"/>
+                </default>
+            </default>
+        </default>
+
+    </default>
+
+    <asset>
+        <texture name="skybox" type="skybox" builtin="gradient" rgb1="0.4 0.6 0.8" rgb2="0 0 0" mark="random" markrgb="1 1 1" width="800" height="800" />
+        <texture name="plane" type="2d" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.3 0.4 0.5" width="10" height="10" />
+        <material name="plane" texture="plane" texrepeat="5 5" reflectance="0.2" />
+        <texture name="grid" type="2d" builtin="checker" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" mark="edge" markrgb="0.2 0.3 0.4" width="300" height="300" />
+        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0.2" />
+    </asset>
+    
+    <worldbody>
+        <geom name="floor" type="plane" conaffinity="1" size="100 100 .2" material="grid"/>
+        <body name="CyberMice" pos="0 0 0.05">
+            <camera name="side" mode="trackcom" pos="0.008 -0.256 0.180" xyaxes="1.000 0.007 -0.000 -0.003 0.486 0.874"/>
+            <camera name="back" mode="trackcom" pos="-0.162 0.001 0.133" xyaxes="-0.003 -1.000 0.000 0.494 -0.002 0.869"/>
+
+            <light name="top" mode="trackcom" exponent="10" cutoff="45" ambient="0 0 0" pos="0 0 5" directional="false" />
+            
+            <freejoint name="free"/>
+            <!-- <joint name="root_x" type="slide" pos="0 0 0" axis="1 0 0" limited="false" stiffness="0" group="0" />
+            <joint name="root_y" type="slide" pos="0 0 0" axis="0 1 0" limited="false" stiffness="0" group="0" />
+            <joint name="root_z" type="slide" pos="0 0 0" axis="0 0 1" limited="false" stiffness="0" group="0" />
+            <joint name="root_rot_x" pos="0 0 0" axis="1 0 0" limited="false" stiffness="0" group="0" />
+            <joint name="root_rot_y" pos="0 0 0" axis="0 1 0" limited="false" stiffness="0" group="0" />
+            <joint name="root_rot_z" pos="0 0 0" axis="0 0 1" limited="false" stiffness="0" group="0" /> -->
+
+            <geom name="Chest_collision" class="nonself_collision_primitive" type="ellipsoid" size="0.02 0.008 0.01" density="468.251260009" pos="0.002 0 -0.007" euler="0 0 0"/>
+
+            <body name="C7" pos="0.01875 0 -0.008" gravcomp="0">
+                <geom name="C7_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+                
+                <joint name="T_C7_x" class="Cervical_x" pos="0 0 0" axis="1 0 0" range="-0.18 0.18"/>
+                <!-- <joint name="T_C7_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/> -->
+                <!-- <joint name="T_C7_z" class="Cervical_z" pos="0 0 0" axis="0 0 1" range="-0.18 0.18"/> -->
+
+                <body name="C6" pos="0.00075 0.00 0.0001" gravcomp="0">
+                    <geom name="C6_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+                    
+                    <!-- <joint name="C7_C6_x" class="Cervical_x" pos="0 0 0" axis="0.9659 0 0.2588" range="-0.18 0.18"/> -->
+                    <joint name="C7_C6_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/>
+                    <!-- <joint name="C7_C6_z" class="Cervical_z" pos="0 0 0" axis="-0.2588 0 0.9659" range="-0.18 0.18"/> -->
+
+                    <body name="C5" pos="0.001 0 0.0004" gravcomp="0">
+                        <geom name="C5_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+
+                        <!-- <joint name="C6_C5_x" class="Cervical_x" pos="0 0 0" axis="0.9659 0 0.2588" range="-0.18 0.18"/> -->
+                        <!-- <joint name="C6_C5_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/> -->
+                        <joint name="C6_C5_z" class="Cervical_z" pos="0 0 0" axis="-0.2588 0 0.9659" range="-0.18 0.18"/>
+
+                        <body name="C4" pos="0.001 0 0.0003" gravcomp="0">
+                            <geom name="C4_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+                            
+                            <joint name="C5_C4_x" class="Cervical_x" pos="0 0 0" axis="0.9659 0 0.2588" range="-0.18 0.18"/>
+                            <!-- <joint name="C5_C4_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/> -->
+                            <!-- <joint name="C5_C4_z" class="Cervical_z" pos="0 0 0" axis="-0.2588 0 0.9659" range="-0.18 0.18"/> -->
+
+                            <body name="C3" pos="0.001 0 0.0005" euler="0 0 0" gravcomp="0">
+                                <geom name="C3_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+
+                                <!-- <joint name="C4_C3_x" class="Cervical_x" pos="0 0 0" axis="0.9397 0 0.3420" range="-0.18 0.18"/> -->
+                                <joint name="C4_C3_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/>
+                                <!-- <joint name="C4_C3_z" class="Cervical_z" pos="0 0 0" axis="-0.3420 0 0.9397" range="-0.18 0.18"/> -->
+
+                                <body name="C2" pos="0.001 0 0.001" gravcomp="0">
+                                    <geom name="C2_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+                                    
+                                    <!-- <joint name="C3_C2_x" class="Cervical_x" pos="0 0 0" axis="0.9063 0 0.4226" range="-0.18 0.18"/> -->
+                                    <!-- <joint name="C3_C2_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/> -->
+                                    <joint name="C3_C2_z" class="Cervical_z" pos="0 0 0" axis="-0.4226 0 0.9063" range="-0.18 0.18"/>
+
+                                    <body name="C1" pos="0.001 0 0.001" gravcomp="0">
+                                        <geom name="C1_collision" class="nonself_collision_primitive" type="sphere" pos="0.001 0 0" size="0.003" density="300.0"/>
+
+                                        <joint name="C2_C1_x" class="Cervical_x" pos="0 0 0" axis="0.9063 0 0.4226" range="-0.18 0.18"/>
+                                        <!-- <joint name="C2_C1_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/> -->
+                                        <!-- <joint name="C2_C1_z" class="Cervical_z" pos="0 0 0" axis="-0.4226 0 0.9063" range="-0.18 0.18"/> -->
+
+                                        <body name="Head" pos="0.001 0 0.001" gravcomp="0">
+                                            <geom name="Head_collision" class="collision_primitive" type="ellipsoid" size="0.0125 0.0075 0.007" density="703.10773841" pos="0.01 0 -0.005" euler="0 0.7 0"/>
+                                            
+                                            <camera name="egocentric" fovy="80.0" pos="0.033 0.000 0.052" xyaxes="0.105 -0.995 -0.000 0.595 0.063 0.801"/>
+                                            
+                                            <site name="Head"/>
+
+                                            <!-- <joint name="C1_head_x" class="Cervical_x" pos="0 0 0" axis="0.9063 0 0.4226" range="-0.18 0.18"/> -->
+                                            <joint name="C1_head_y" class="Cervical_y" pos="0 0 0" axis="0 1 0" range="-0.18 0.18"/>
+                                            <joint name="C1_head_z" class="Cervical_z" pos="0 0 0" axis="-0.4226 0 0.9063" range="-0.18 0.18"/>
+                                        
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+            
+            <body name="RScapula" pos="0.0135 0.0 -0.009" euler="0 0.0 0" gravcomp="0">
+                <geom name="RScapula_collision" class="nonself_collision_primitive" type="ellipsoid" size="0.001 0.0035 0.0065" density="513.564646393" pos="0.005 -0.0055 0.004" euler="0 2 0.9" group="1"/>
+                
+                <joint name="RScapula_r1" pos="0.005 0 0" axis="1 0 0" range="-0.08726646259971647 0.08726646259971647" group="0" />
+                <joint name="RScapula_r2" pos="0.005 0 0" axis="0 1 0" range="-0.08726646259971647 0.08726646259971647" group="0" />
+                <joint name="RScapula_r3" pos="0.005 -0.006 0.0055" axis="1 -0.1 -0.5" range="-0.08726646259971647 0.08726646259971647" group="0" />
+                <joint name="RScapula_r4" pos="0.005 -0.006 0.0055" axis="0 -1 1" range="-0.08726646259971647 0.08726646259971647" group="0" />
+                
+                <body name="RHumerus" pos="0.01 -0.006 0.0015" euler="0 0 0" gravcomp="0">
+                    <joint name="RShoulder_flexion" pos="0 0 0" axis="0 -1 0" range="-1.2217304763960306 1.2217304763960306" group="0" />
+                    <joint name="RShoulder_adduction" pos="0 0 0" axis="1 0 0" range="-1.0471975511965976 0.7853981633974483" group="0" />
+                    <joint name="RShoulder_rotation" pos="0 0 0" axis="0 0 1" range="-0.17453292519943295 1.5707963267948966" group="0" />
+                    <geom name="RHumerus_collision" class="collision_primitive" size="0.002 0.0045" pos="0.0005 -0.0005 -0.0045" euler="0 0 0"/>   
+                    
+                    <body name="RUlna" pos="0.001 -0.001 -0.01" euler="0 0 0" gravcomp="0">
+                        <joint name="RElbow_flexion" pos="0 0 0" axis="0 -1 0" range="0.0 2.5" group="0" />
+                        <geom name="RUlna_collision" class="collision_primitive" size="0.001 0.006" pos="-0.0008 0 -0.0045" euler="0.1 0 0"/>
+                        
+                        <body name="RRadius" pos="0 0 -0.0075" gravcomp="0">
+                            <!-- <joint name="RRadius_rotation" pos="0.0007 -0.0003 0" axis="-0.1 -0.075 1" range="-1.5707963267948966 1.5707963267948966" group="0" /> -->
+                            <geom name="RRadius_collision" class="collision_primitive" size="0.001 0.005" pos="0.0005 0 0.002" euler="0.1 0 0"/>
+                            
+                            <body name="RCarpi" pos="0 0 -0.0035" gravcomp="0">
+                                <joint name="RWrist_adduction" pos="0 0 0" axis="0 -1 0" range="-0.7853981633974483 0.7853981633974483" group="0" />
+                                <joint name="RWrist_flexion" pos="0 0 0" axis="1 0 0" range="-1.5707963267948966 1.5707963267948966" group="0" />
+                                <geom name="RHand_collision" class="collision_primitive_paw" type="ellipsoid" size="0.0016 0.001 0.002" density="2531.78122831" pos="0 0.001 -0.002" euler="0.25 0 0.1"/>   
+                                <geom name="RFinger_0_collision" class="collision_primitive_paw" size="0.0004 0.0008" pos="0.001 0.002 -0.0045" euler="0.25 0 0.1"/>
+                                <geom name="RFinger_1_collision" class="collision_primitive_paw" size="0.0004 0.0009" pos="0 0.002 -0.005" euler="0.25 0 0.1"/>
+                                <geom name="RFinger_2_collision" class="collision_primitive_paw" size="0.0004 0.0008" pos="-0.001 0.002 -0.0045" euler="0.25 0 0.1"/>
+
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+
+            <body name="LScapula" pos="0.0135 0.0 -0.009" gravcomp="0">
+                <geom name="LScapula_collision" class="nonself_collision_primitive" type="ellipsoid" size="0.001 0.0035 0.0065" density="513.564646393" pos="0.005 0.0055 0.004" euler="0 2 -0.9" group="1"/>
+                
+                <joint name="LScapula_r1" pos="0.005 0 0" axis="-1 0 0" range="-0.08726646259971647 0.08726646259971647" group="1" />
+                <joint name="LScapula_r2" pos="0.005 0 0" axis="0 1 0" range="-0.08726646259971647 0.08726646259971647" group="1" />
+                <joint name="LScapula_r3" pos="0.005 0.006 0.0055" axis="-1 -0.1 0.5" range="-0.08726646259971647 0.08726646259971647" group="1" />
+                <joint name="LScapula_r4" pos="0.005 0.006 0.0055" axis="0 -1 -1" range="-0.08726646259971647 0.08726646259971647" group="1" />
+                
+                <body name="LHumerus" pos="0.01 0.006 0.0015" euler="0 0 0" gravcomp="0">
+                    <joint name="LShoulder_flexion" pos="0 0 0" axis="0 -1 0" range="-1.2217304763960306 1.2217304763960306" group="1" />
+                    <joint name="LShoulder_adduction" pos="0 0 0" axis="-1 0 0" range="-1.0471975511965976 0.7853981633974483" group="1" />
+                    <joint name="LShoulder_rotation" pos="0 0 0" axis="0 0 -1" range="-0.17453292519943295 1.5707963267948966" group="1" />
+                    <geom name="LHumerus_collision" class="collision_primitive" size="0.002 0.0045" pos="0.0005 0.0005 -0.0045" euler="0 0 0"/>
+                    
+                    <body name="LUlna" pos="0.001 0.001 -0.01" euler="0 0 0" gravcomp="0">
+                        <joint name="LElbow_flexion" pos="0 0 0" axis="0 -1 0" range="0.0 2.5" group="1" />
+                        <geom name="LUlna_collision" class="collision_primitive" size="0.001 0.006" pos="-0.0008 0 -0.0045" euler="-0.1 0 0"/>
+                    
+                        <body name="LRadius" pos="0 0 -0.0075" gravcomp="0">
+                            <!-- <joint name="LRadius_rotation" pos="0.0007 0.0003 0" axis="0.1 -0.075 -1" range="-1.5707963267948966 1.5707963267948966" group="1" /> -->
+                            <geom name="LRadius_collision" class="collision_primitive" size="0.001 0.005" pos="0.0005 0 0.002" euler="-0.1 0 0"/>
+                        
+                            <body name="LCarpi" pos="0 0 -0.0035" gravcomp="0">
+                                <joint name="LWrist_adduction" pos="0 0 0" axis="0 -1 0" range="-0.7853981633974483 0.7853981633974483" group="1" />
+                                <joint name="LWrist_flexion" pos="0 0 0" axis="-1 0 0" range="-1.5707963267948966 1.5707963267948966" group="1" />
+                                <geom name="LHand_collision" class="collision_primitive_paw" type="ellipsoid" size="0.0016 0.001 0.002" density="2531.78122831" pos="0 -0.001 -0.002" euler="-0.25 0 0.1"/>   
+                                <geom name="LFinger_0_collision" class="collision_primitive_paw" size="0.0004 0.0008" pos="0.001 -0.002 -0.0045" euler="-0.25 0 0.1"/>
+                                <geom name="LFinger_1_collision" class="collision_primitive_paw" size="0.0004 0.0009" pos="0 -0.002 -0.005" euler="-0.25 0 0.1"/>
+                                <geom name="LFinger_2_collision" class="collision_primitive_paw" size="0.0004 0.0008" pos="-0.001 -0.002 -0.0045" euler="-0.25 0 0.1"/>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+
+            <body name="L1" pos="0.0 0.00 0.00" gravcomp="0">
+                <geom name="L1_collision" class="nonself_collision_primitive" type="sphere" size="0.0025" pos="-0.002 0 0"/>
+                
+                <joint name="T_L1_x" class="Lumbar_x" pos="0 0 0.001" axis="0.9848 0 0.1736" range="-0.25 0.25"/>
+                <!-- <joint name="T_L1_y" class="Lumbar_y" pos="0 0 0.001" axis="0 1 0" range="-0.25 0.25"/> -->
+                <!-- <joint name="T_L1_z" class="Lumbar_z" pos="0 0 0.001" axis="-0.1736 0 0.9848" range="-0.25 0.25"/> -->
+                
+                <body name="L2" pos="-0.004 0 -0.00015" gravcomp="0">
+                    <geom name="L2_collision" class="nonself_collision_primitive" type="sphere" size="0.0025" pos="-0.001 0 -0.00075"/>
+                    
+                    <!-- <joint name="L1_L2_x" class="Lumbar_x" pos="0 0 0" axis="0.9848 0 0.1736" range="-0.25 0.25"/> -->
+                    <joint name="L1_L2_y" class="Lumbar_y" pos="0 0 0" axis="0 1 0" range="-0.25 0.25"/>
+                    <!-- <joint name="L1_L2_z" class="Lumbar_z" pos="0 0 0" axis="-0.1736 0 0.9848" range="-0.25 0.25"/> -->
+                    
+                    <body name="L3" pos="-0.00225 0 -0.00075" euler="0 0 0" gravcomp="0">
+                        <geom name="L3_collision" class="nonself_collision_primitive" type="sphere" size="0.0025" pos="-0.001 0 -0.0005"/>
+                        
+                        <!-- <joint name="L2_L3_x" class="Lumbar_x" pos="0 0 0" axis="0.9848 0 0.1736" range="-0.25 0.25"/> -->
+                        <!-- <joint name="L2_L3_y" class="Lumbar_y" pos="0 0 0" axis="0 1 0" range="-0.25 0.25"/> -->
+                        <joint name="L2_L3_z" class="Lumbar_z" pos="0 0 0" axis="-0.1736 0 0.9848" range="-0.25 0.25"/>
+                        
+                        <body name="L4" pos="-0.00275 0 -0.0006" euler="0 0 0" gravcomp="0">
+                            <geom name="L4_collision" class="nonself_collision_primitive" type="sphere" size="0.0025" pos="-0.001 0 -0.00025"/>
+                            
+                            <joint name="L3_L4_x" class="Lumbar_x" pos="0 0 0" axis="1 0 0" range="-0.25 0.25"/>
+                            <!-- <joint name="L3_L4_y" class="Lumbar_y" pos="0 0 0" axis="0 1 0" range="-0.25 0.25"/> -->
+                            <!-- <joint name="L3_L4_z" class="Lumbar_z" pos="0 0 0" axis="0 0 1" range="-0.25 0.25"/> -->
+
+                            <body name="L5" pos="-0.0035 0 -0.000" gravcomp="0">
+                                <geom name="L5_collision" class="nonself_collision_primitive" type="sphere" size="0.0025" pos="-0.001 0 0"/>
+                                
+                                <!-- <joint name="L4_L5_x" class="Lumbar_x" pos="0 0 0" axis="1 0 0" range="-0.25 0.25"/> -->
+                                <joint name="L4_L5_y" class="Lumbar_y" pos="0 0 0" axis="0 1 0" range="-0.25 0.25"/>
+                                <!-- <joint name="L4_L5_z" class="Lumbar_z" pos="0 0 0" axis="0 0 1" range="-0.25 0.25"/> -->
+                                
+                                <body name="L6" pos="-0.003 0 -0.000" gravcomp="0">
+                                    <geom name="L6_collision" class="nonself_collision_primitive" type="sphere" size="0.0025" pos="-0.001 0 0.00025"/>
+                                   
+                                    <!-- <joint name="L5_L6_x" class="Lumbar_x" pos="0 0 0" axis="1 0 0" range="-0.25 0.25"/> -->
+                                    <!-- <joint name="L5_L6_y" class="Lumbar_y" pos="0 0 0" axis="0 1 0" range="-0.25 0.25"/> -->
+                                    <joint name="L5_L6_z" class="Lumbar_z" pos="0 0 0" axis="0 0 1" range="-0.25 0.25"/>
+
+                                    <body name="Pelvis" pos="0.0025 0.00 -0.00175" euler="0 0 0" gravcomp="0">                                     
+                                        <geom name="RPelvis_collision" class="nonself_collision_primitive" size="0.0035 0.0075 0" density="1548.57736929" pos="-0.009 -0.003 0.001" euler="0 1.57 0"/>
+                                        <geom name="LPelvis_collision" class="nonself_collision_primitive" size="0.0035 0.0075 0" density="1548.57736929" pos="-0.009 0.003 0.001" euler="0 1.57 0"/>
+                                        <geom name="collision_pelvis_gut" class="nonself_collision_primitive" type="ellipsoid" size="0.006 0.006 0.005" density="1548.57736929" pos="-0.005 0 -0.0065" euler="0 0.2 0"/>
+
+                                        <joint name="L6_S1_x" class="Lumbar_x" pos="-0.005 0 0.002" axis="1 0 0" range="-0.25 0.25"/>
+                                        <joint name="L6_S1_y" class="Lumbar_y" pos="-0.005 0 0.002" axis="0 1 0" range="-0.25 0.25"/>
+                                        <joint name="L6_S1_z" class="Lumbar_z" pos="-0.005 0 0.002" axis="0 0 1" range="-0.25 0.25"/>
+                                
+                                        <body name="RFemur" pos="-0.013 -0.0028 0.002" gravcomp="0">
+                                            <joint name="RHip_rotation" pos="0 0 0" axis="0 0 1" range="-0.5 0.5" group="3" />
+                                            <joint name="RHip_flexion" pos="0 0 0" axis="0 -1 0" range="-1.5707963267948966 1.5707963267948966" group="3" />
+                                            <joint name="RHip_adduction" pos="0 0 0" axis="1 0 0" range="-1.0471975511965976 0.5235987755982988" group="3" />
+
+                                            <geom name="RFemur_collision" class="collision_primitive" size="0.0025 0.006" density="1561.75550556" pos="-0.001 -0.001 -0.007" euler="0.1 0 0"/>
+                                                           
+                                            <body name="R_Leg" pos="-0.001 0 -0.0135" gravcomp="0">
+                                                <joint name="RKnee_flexion" pos="0 0 0" axis="0 1 0" range="0.0 2.5" group="3" />
+                                                <geom name="R_leg_collision" class="collision_primitive" size="0.002 0.007" density="1302.86687267" pos="-0.0002 0.0002 -0.01" euler="0.05 0 0"/>
+                                                
+                                                <body name="RPedal" pos="-0.001 0.00125 -0.0184" gravcomp="0">
+                                                    <!-- <joint name="RAnkle_adduction" pos="0 0 0" axis="0 0 1" range="-1.0471975511965976 1.0471975511965976" group="3" /> -->
+                                                    <joint name="RAnkle_flexion" pos="0 0 0" axis="0 -1 0" range="-1.0471975511965976 1.0471975511965976" group="3" />
+                                                    <joint name="RAnkle_rotation" pos="0 0 0" axis="1 0 0" range="-0.3490658503988659 0.3490658503988659" group="3" />
+                                                    
+                                                    <geom name="RFoot_collision" class="collision_primitive_paw" size="0.0015 0.003" density="2041.15978228" pos="0.002 0 0" euler="0 1.57 0"/>
+                                                    <geom name="RToe_0_collision" class="collision_primitive_paw" size="0.001 0.003" density="2041.15978228" pos="0.01 0.0015 -0.0005" euler="0 1.57 0"/>
+                                                    <geom name="RToe_1_collision" class="collision_primitive_paw" size="0.001 0.003" density="2041.15978228" pos="0.01 0 -0.0005" euler="0 1.57 0"/>
+                                                    <geom name="RToe_2_collision" class="collision_primitive_paw" size="0.001 0.003" density="2041.15978228" pos="0.01 -0.0015 -0.0005" euler="0 1.57 0"/>
+                                                </body>
+                                            </body>
+                                        </body>
+
+                                        <body name="LFemur" pos="-0.013 0.0028 0.002" gravcomp="0">
+                                            <joint name="LHip_rotation" pos="0 0 0" axis="0 0 -1" range="-0.5 0.5" group="4" />
+                                            <joint name="LHip_flexion" pos="0 0 0" axis="0 -1 0" range="-1.5707963267948966 1.5707963267948966" group="4" />
+                                            <joint name="LHip_adduction" pos="0 0 0" axis="-1 0 0" range="-1.0471975511965976 0.5235987755982988" group="4" />
+
+                                            <geom name="LFemur_collision" class="collision_primitive" size="0.0025 0.006" density="1561.75550556" pos="-0.001 0.001 -0.007" euler="-0.1 0 0"/>
+                                      
+                                            <body name="LLeg" pos="-0.001 0 -0.0135" gravcomp="0">
+                                                <joint name="LKnee_flexion" pos="0 0 0" axis="0 1 0" range="0.0 2.5" group="4" />
+                                                <geom name="L_leg_collision" class="collision_primitive" size="0.002 0.007" density="1302.86687267" pos="-0.0002 -0.0002 -0.01" euler="-0.05 0 0"/>
+                                                
+                                                <body name="LPedal" pos="-0.001 -0.00125 -0.0184" gravcomp="0">
+                                                    <!-- <joint name="LAnkle_adduction" pos="0 0 0" axis="0 0 -1" range="-1.0471975511965976 1.0471975511965976" group="4" /> -->
+                                                    <joint name="LAnkle_flexion" pos="0 0 0" axis="0 -1 0" range="-1.0471975511965976 1.0471975511965976" group="4" />
+                                                    <joint name="LAnkle_rotation" pos="0 0 0" axis="-1 0 0" range="-0.3490658503988659 0.3490658503988659" group="4" />
+                                                    
+                                                    <geom name="LFoot_collision" class="collision_primitive_paw" size="0.0015 0.003" density="2041.15978228" pos="0.002 0 0" euler="0 1.57 0"/>
+                                                    <geom name="LToe_0_collision" class="collision_primitive_paw" size="0.001 0.003" density="2041.15978228" pos="0.01 -0.0015 -0.0005" euler="0 1.57 0"/>
+                                                    <geom name="LToe_1_collision" class="collision_primitive_paw" size="0.001 0.003" density="2041.15978228" pos="0.01 0 -0.0005" euler="0 1.57 0"/>
+                                                    <geom name="LToe_2_collision" class="collision_primitive_paw" size="0.001 0.003" density="2041.15978228" pos="0.01 0.0015 -0.0005" euler="0 1.57 0"/>
+                                                    
+                                                </body>
+                                            </body>
+                                        </body>
+
+                                        <!-- <body name="CA1" pos="-0.0175 0 0.003" gravcomp="0">
+                                            <geom name="CA1_collision" class="collision_primitive" size="0.00175 0.0015" density="507.157357703" pos="-0.001 0 0" euler="1.57 0 0" group="1"/>
+                                            <joint name="S4_CA1_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                            <joint name="S4_CA1_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                            <body name="CA2" pos="-0.003 0 0" gravcomp="0">
+                                                <geom name="CA2_collision" class="collision_primitive" size="0.00175 0.001" density="507.157357703" pos="-0.001 0 0" euler="1.57 0 0" group="1"/>                                                
+                                                <joint name="CA1_CA2_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                <joint name="CA1_CA2_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                <body name="CA3" pos="-0.0025 0 0" gravcomp="0">
+                                                    <geom name="CA3_collision" class="collision_primitive" size="0.0015 0.00075" density="507.157357703" pos="-0.0011 0 0.001" euler="0 1.57 0" group="1"/>
+                                                    <joint name="CA2_CA3_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                    <joint name="CA2_CA3_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                    <body name="CA4" pos="-0.0025 0 0.001" gravcomp="0">
+                                                        <geom name="CA4_collision" class="collision_primitive" size="0.0015 0.00075" density="507.157357703" pos="-0.0015 0 0" euler="0 1.57 0" group="1"/>
+                                                        <joint name="CA3_CA4_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                        <joint name="CA3_CA4_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                        <body name="CA5" pos="-0.0034 0.0 0.0" gravcomp="0">
+                                                            <geom name="CA5_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.00175 0 0" euler="0 1.57 0" group="1"/>
+                                                            <joint name="CA4_CA5_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                            <joint name="CA4_CA5_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                            <body name="CA6" pos="-0.004 0.0 0.0" gravcomp="0">
+                                                                <geom name="CA6_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.00175 0 0" euler="0 1.57 0" group="1"/>
+                                                                <joint name="CA5_CA6_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                <joint name="CA5_CA6_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                <body name="CA7" pos="-0.00375 0.0 0.0" gravcomp="0">
+                                                                    <geom name="CA7_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.00175 0 0" euler="0 1.57 0" group="1"/>
+                                                                    <joint name="CA6_CA7_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                    <joint name="CA6_CA7_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                    <body name="CA8" pos="-0.004 0.0 0.0" gravcomp="0">
+                                                                        <geom name="CA8_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.00175 0 0" euler="0 1.57 0" group="1"/>
+                                                                        <joint name="CA7_CA8_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                        <joint name="CA7_CA8_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                        <body name="CA9" pos="-0.00375 0 0" gravcomp="0">
+                                                                            <geom name="CA9_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.00175 0 0" euler="0 1.57 0" group="1"/>
+                                                                            <joint name="CA8_CA9_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                            <joint name="CA8_CA9_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                            <body name="CA10" pos="-0.004 0 0" gravcomp="0">
+                                                                                <geom name="CA10_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.002 0 0" euler="0 1.57 0" group="1"/>
+                                                                                <joint name="CA9_CA10_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                <joint name="CA9_CA10_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                <body name="CA11" pos="-0.00425 0 0" gravcomp="0">
+                                                                                    <geom name="CA11_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.002 0 0" euler="0 1.57 0" group="1"/>
+                                                                                    <joint name="CA10_CA11_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                    <joint name="CA10_CA11_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                    <body name="CA12" pos="-0.00425 0 0" gravcomp="0">
+                                                                                        <geom name="CA12_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.002 0 0" euler="0 1.57 0" group="1"/>
+                                                                                        <joint name="CA11_CA12_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                        <joint name="CA11_CA12_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                        <body name="CA13" pos="-0.00425 0 0" gravcomp="0">
+                                                                                            <geom name="CA13_collision" class="collision_primitive" size="0.0015 0.00085" density="507.157357703" pos="-0.002 0 0" euler="0 1.57 0" group="1"/>
+                                                                                            <joint name="CA12_CA13_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                            <joint name="CA12_CA13_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                            <body name="CA14" pos="-0.00415 0 0" gravcomp="0">
+                                                                                                <geom name="CA14_collision" class="collision_primitive" size="0.00125 0.001" density="507.157357703" pos="-0.00175 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                <joint name="CA13_CA14_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                <joint name="CA13_CA14_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                <body name="CA15" pos="-0.004 0 0" gravcomp="0">
+                                                                                                    <geom name="CA15_collision" class="collision_primitive" size="0.00125 0.001" density="507.157357703" pos="-0.0015 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                    <joint name="CA14_CA15_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                    <joint name="CA14_CA15_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                    <body name="CA16" pos="-0.00375 0 0" gravcomp="0">
+                                                                                                        <geom name="CA16_collision" class="collision_primitive" size="0.00125 0.001" density="507.157357703" pos="-0.0015 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                        <joint name="CA15_CA16_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                        <joint name="CA15_CA16_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                        <body name="CA17" pos="-0.0036 0 0" gravcomp="0">
+                                                                                                            <geom name="CA17_collision" class="collision_primitive" size="0.00125 0.00075" density="507.157357703" pos="-0.0017 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                            <joint name="CA16_CA17_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                            <joint name="CA16_CA17_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                            <body name="CA18" pos="-0.0036 0 0" gravcomp="0">
+                                                                                                                <geom name="CA18_collision" class="collision_primitive" size="0.00125 0.00075" density="507.157357703" pos="-0.0017 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                <joint name="CA17_CA18_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                <joint name="CA17_CA18_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                <body name="CA19" pos="-0.0035 0 0" gravcomp="0">
+                                                                                                                    <geom name="CA19_collision" class="collision_primitive" size="0.0009 0.0009" density="507.157357703" pos="-0.0016 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                    <joint name="CA18_CA19_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                    <joint name="CA18_CA19_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                    <body name="CA20" pos="-0.00335 0 0" gravcomp="0">
+                                                                                                                        <geom name="CA20_collision" class="collision_primitive" size="0.0009 0.0008" density="507.157357703" pos="-0.0014 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA19_CA20_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA19_CA20_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA21" pos="-0.0031 0 -0.0" gravcomp="0">
+                                                                                                                        <geom name="CA21_collision" class="collision_primitive" size="0.0009 0.0007" density="507.157357703" pos="-0.0013 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA20_CA21_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA20_CA21_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA22" pos="-0.00275 0 0.0" gravcomp="0">
+                                                                                                                        <geom name="CA22_collision" class="collision_primitive" size="0.0007 0.0007" density="507.157357703" pos="-0.0012 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA21_CA22_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA21_CA22_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA23" pos="-0.0025 0 0" gravcomp="0">
+                                                                                                                        <geom name="CA23_collision" class="collision_primitive" size="0.0005 0.0006" density="507.157357703" pos="-0.001 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA22_CA23_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA22_CA23_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA24" pos="-0.002 0 0" gravcomp="0">
+                                                                                                                        <geom name="CA24_collision" class="collision_primitive" size="0.0005 0.0006" density="507.157357703" pos="-0.001 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA23_CA24_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA23_CA24_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA25" pos="-0.002 0 0" gravcomp="0">
+                                                                                                                        <geom name="CA25_collision" class="collision_primitive" size="0.0005 0.0004" density="507.157357703" pos="-0.0008 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA24_CA25_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA24_CA25_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA26" pos="-0.00175 0 0" gravcomp="0">
+                                                                                                                        <geom name="CA26_collision" class="collision_primitive" size="0.0005 0.0003" density="507.157357703" pos="-0.0007 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA25_CA26_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA25_CA26_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        <body name="CA27" pos="-0.00155 0 0" gravcomp="0">
+                                                                                                                        <geom name="CA27_collision" class="collision_primitive" size="0.0005 0.0005" density="507.157357703" pos="-0.0009 0 0" euler="0 1.57 0" group="1"/>
+                                                                                                                        <joint name="CA26_CA27_y" class="Caudal_y" pos="0 0 0" axis="0 1 0"/>
+                                                                                                                        <joint name="CA26_CA27_z" class="Caudal_z" pos="0 0 0" axis="0 0 1"/>
+                                                                                                                        </body>
+                                                                                                                        </body>
+                                                                                                                        </body>
+                                                                                                                        </body>
+                                                                                                                        </body>
+                                                                                                                        </body>
+                                                                                                                        </body>
+                                                                                                                    </body>
+                                                                                                                </body>
+                                                                                                            </body>
+                                                                                                        </body>
+                                                                                                    </body>
+                                                                                                </body>
+                                                                                            </body>
+                                                                                        </body>
+                                                                                    </body>   
+                                                                                </body>
+                                                                            </body>
+                                                                        </body>
+                                                                    </body>
+                                                                </body>
+                                                            </body>
+                                                        </body>
+                                                    </body>
+                                                </body>
+                                            </body>
+                                        </body> -->
+
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+
+
+        </body>
+    </worldbody>
+
+    <tendon>
+        <fixed name="Cervical_x" class="Cervical_x">
+            <joint joint="T_C7_x" coef="0.334"/>
+            <joint joint="C5_C4_x" coef="0.333"/>
+            <joint joint="C2_C1_x" coef="0.333"/>
+        </fixed>
+
+        <fixed name="Cervical_y" class="Cervical_y">
+            <joint joint="C7_C6_y" coef="0.334"/>
+            <joint joint="C4_C3_y" coef="0.333"/>
+            <joint joint="C1_head_y" coef="0.333"/>
+        </fixed>
+
+        <fixed name="Cervical_z" class="Cervical_z">
+            <joint joint="C6_C5_z" coef="0.334"/> 
+            <joint joint="C3_C2_z" coef="0.333"/>
+            <joint joint="C1_head_z" coef="0.333"/>
+        </fixed>
+
+        <fixed name="Lumbar_x" class="Lumbar_x">
+            <joint joint="T_L1_x" coef="0.334"/>
+            <joint joint="L3_L4_x" coef="0.332"/>
+            <joint joint="L6_S1_x" coef="0.334"/>
+        </fixed>
+
+        <fixed name="Lumbar_y" class="Lumbar_y">
+            <joint joint="L1_L2_y" coef="0.334"/>
+            <joint joint="L4_L5_y" coef="0.332"/>
+            <joint joint="L6_S1_y" coef="0.334"/>
+        </fixed>
+
+        <fixed name="Lumbar_z" class="Lumbar_z">
+            <joint joint="L2_L3_z" coef="0.334"/>
+            <joint joint="L5_L6_z" coef="0.332"/>
+            <joint joint="L6_S1_z" coef="0.334"/>
+        </fixed>
+
+        <!-- <fixed name="Caudal_y" class="Caudal_y">
+            <joint joint="S4_CA1_y" coef="0.038"/>
+            <joint joint="CA1_CA2_y" coef="0.037"/>
+            <joint joint="CA2_CA3_y" coef="0.037"/>
+            <joint joint="CA3_CA4_y" coef="0.037"/>
+            <joint joint="CA4_CA5_y" coef="0.037"/>
+            <joint joint="CA5_CA6_y" coef="0.037"/>
+            <joint joint="CA6_CA7_y" coef="0.037"/>
+            <joint joint="CA7_CA8_y" coef="0.037"/>
+            <joint joint="CA8_CA9_y" coef="0.037"/>
+            <joint joint="CA9_CA10_y" coef="0.037"/>
+            <joint joint="CA10_CA11_y" coef="0.037"/>
+            <joint joint="CA11_CA12_y" coef="0.037"/>
+            <joint joint="CA12_CA13_y" coef="0.037"/>
+            <joint joint="CA13_CA14_y" coef="0.037"/>
+            <joint joint="CA14_CA15_y" coef="0.037"/>
+            <joint joint="CA15_CA16_y" coef="0.037"/>
+            <joint joint="CA16_CA17_y" coef="0.037"/>
+            <joint joint="CA17_CA18_y" coef="0.037"/>
+            <joint joint="CA18_CA19_y" coef="0.037"/>
+            <joint joint="CA19_CA20_y" coef="0.037"/>
+            <joint joint="CA20_CA21_y" coef="0.037"/>
+            <joint joint="CA21_CA22_y" coef="0.037"/>
+            <joint joint="CA22_CA23_y" coef="0.037"/>
+            <joint joint="CA23_CA24_y" coef="0.037"/>
+            <joint joint="CA24_CA25_y" coef="0.037"/>
+            <joint joint="CA25_CA26_y" coef="0.037"/>
+            <joint joint="CA26_CA27_y" coef="0.037"/>
+        </fixed>
+
+        <fixed name="Caudal_z" class="Caudal_z">
+            <joint joint="S4_CA1_z" coef="0.038"/>
+            <joint joint="CA1_CA2_z" coef="0.037"/>
+            <joint joint="CA2_CA3_z" coef="0.037"/>
+            <joint joint="CA3_CA4_z" coef="0.037"/>
+            <joint joint="CA4_CA5_z" coef="0.037"/>
+            <joint joint="CA5_CA6_z" coef="0.037"/>
+            <joint joint="CA6_CA7_z" coef="0.037"/>
+            <joint joint="CA7_CA8_z" coef="0.037"/>
+            <joint joint="CA8_CA9_z" coef="0.037"/>
+            <joint joint="CA9_CA10_z" coef="0.037"/>
+            <joint joint="CA10_CA11_z" coef="0.037"/>
+            <joint joint="CA11_CA12_z" coef="0.037"/>
+            <joint joint="CA12_CA13_z" coef="0.037"/>
+            <joint joint="CA13_CA14_z" coef="0.037"/>
+            <joint joint="CA14_CA15_z" coef="0.037"/>
+            <joint joint="CA15_CA16_z" coef="0.037"/>
+            <joint joint="CA16_CA17_z" coef="0.037"/>
+            <joint joint="CA17_CA18_z" coef="0.037"/>
+            <joint joint="CA18_CA19_z" coef="0.037"/>
+            <joint joint="CA19_CA20_z" coef="0.037"/>
+            <joint joint="CA20_CA21_z" coef="0.037"/>
+            <joint joint="CA21_CA22_z" coef="0.037"/>
+            <joint joint="CA22_CA23_z" coef="0.037"/>
+            <joint joint="CA23_CA24_z" coef="0.037"/>
+            <joint joint="CA24_CA25_z" coef="0.037"/>
+            <joint joint="CA25_CA26_z" coef="0.037"/>
+            <joint joint="CA26_CA27_z" coef="0.037"/>
+        </fixed> -->
+    </tendon>
+    
+    <actuator>
+
+        <general name = "Cervical_x" forcerange="-20 20" tendon="Cervical_x" dyntype="filter" biastype="affine"/>
+        <general name = "Cervical_y" forcerange="-20 20" tendon="Cervical_y" dyntype="filter" biastype="affine"/>
+        <general name = "Cervical_z" forcerange="-20 20" tendon="Cervical_z" dyntype="filter" biastype="affine"/>
+
+        <general name = "Lumbar_x" forcerange="-20 20" tendon="Lumbar_x" dyntype="filter" biastype="affine"/>
+        <general name = "Lumbar_y" forcerange="-20 20" tendon="Lumbar_y" dyntype="filter" biastype="affine"/>
+        <general name = "Lumbar_z" forcerange="-20 20" tendon="Lumbar_z" dyntype="filter" biastype="affine"/>
+
+        <!-- <general name = "RScapula_r1" forcerange="-0.25 0.25" joint="RScapula_r1" dyntype="filter" biastype="affine" />
+        <general name = "RScapula_r2" forcerange="-0.25 0.25" joint="RScapula_r2" dyntype="filter" biastype="affine" />
+        <general name = "RScapula_r3" forcerange="-0.25 0.25" joint="RScapula_r3" dyntype="filter" biastype="affine" />
+        <general name = "RScapula_r4" forcerange="-0.25 0.25" joint="RScapula_r4" dyntype="filter" biastype="affine" /> -->
+
+        <!-- <general name = "RShoulder_flexion" forcerange="-0.15 0.15" joint="RShoulder_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "RShoulder_adduction" forcerange="-0.15 0.15" joint="RShoulder_adduction" dyntype="filter" biastype="affine"/>
+        <general name = "RShoulder_rotation" forcerange="-0.15 0.15" joint="RShoulder_rotation" dyntype="filter" biastype="affine"/>
+        <general name = "RElbow_flexion" forcerange="-0.15 0.15" joint="RElbow_flexion" dyntype="filter" biastype="affine"/> -->
+
+        <!-- <general name = "RWrist_adduction" forcerange="-0.05 0.05" joint="RWrist_adduction" dyntype="filter" biastype="affine" />
+        <general name = "RWrist_flexion" forcerange="-0.05 0.05" joint="RWrist_flexion" dyntype="filter" biastype="affine" /> -->
+
+        <!-- <general name = "LScapula_r1" forcerange="-0.25 0.25" joint="LScapula_r1" dyntype="filter" biastype="affine" />
+        <general name = "LScapula_r2" forcerange="-0.25 0.25" joint="LScapula_r2" dyntype="filter" biastype="affine" />
+        <general name = "LScapula_r3" forcerange="-0.25 0.25" joint="LScapula_r3" dyntype="filter" biastype="affine" />
+        <general name = "LScapula_r4" forcerange="-0.25 0.25" joint="LScapula_r4" dyntype="filter" biastype="affine" /> -->
+
+        <!-- <general name = "LShoulder_flexion" forcerange="-0.15 0.15" joint="LShoulder_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "LShoulder_adduction" forcerange="-0.15 0.15" joint="LShoulder_adduction" dyntype="filter" biastype="affine"/>
+        <general name = "LShoulder_rotation" forcerange="-0.15 0.15" joint="LShoulder_rotation" dyntype="filter" biastype="affine"/>
+        <general name = "LElbow_flexion" forcerange="-0.15 0.15" joint="LElbow_flexion" dyntype="filter" biastype="affine"/> -->
+
+        <!-- <general name = "LWrist_adduction" forcerange="-0.05 0.05" joint="LWrist_adduction" dyntype="filter" biastype="affine" />
+        <general name = "LWrist_flexion" forcerange="-0.05 0.05" joint="LWrist_flexion" dyntype="filter" biastype="affine" /> -->
+
+        <!-- <general name = "RHip_rotation" forcerange="-0.2 0.2" joint="RHip_rotation" dyntype="filter" biastype="affine"/>
+        <general name = "RHip_flexion" forcerange="-0.3 0.3" joint="RHip_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "RHip_adduction" forcerange="-0.2 0.2" joint="RHip_adduction" dyntype="filter" biastype="affine"/> -->
+
+        <!-- <general name = "RKnee_flexion" forcerange="-0.2 0.2" joint="RKnee_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "RAnkle_flexion" forcerange="-0.2 0.2" joint="RAnkle_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "RAnkle_rotation" forcerange="-0.2 0.2" joint="RAnkle_rotation" dyntype="filter" biastype="affine"/> -->
+        
+        <!-- <general name = "LHip_rotation" forcerange="-0.2 0.2" joint="LHip_rotation" dyntype="filter" biastype="affine"/>
+        <general name = "LHip_flexion" forcerange="-0.3 0.3" joint="LHip_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "LHip_adduction" forcerange="-0.2 0.2" joint="LHip_adduction" dyntype="filter" biastype="affine"/> -->
+
+        <!-- <general name = "LKnee_flexion" forcerange="-0.2 0.2" joint="LKnee_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "LAnkle_flexion" forcerange="-0.2 0.2" joint="LAnkle_flexion" dyntype="filter" biastype="affine"/>
+        <general name = "LAnkle_rotation" forcerange="-0.2 0.2" joint="LAnkle_rotation" dyntype="filter" biastype="affine"/> -->
+
+    </actuator>
+
+
+    <contact>
+        <exclude body1="CyberMice" body2="RHumerus" />    
+        <exclude body1="RHumerus" body2="RRadius" />
+        <exclude body1="RUlna" body2="RCarpi" />
+        <exclude body1="CyberMice" body2="LHumerus" />
+        <exclude body1="LHumerus" body2="LRadius" />
+        <exclude body1="LUlna" body2="LCarpi" />
+
+        <exclude body1="CyberMice" body2="C1" />
+        <exclude body1="CyberMice" body2="C2" />
+        <exclude body1="CyberMice" body2="C3" />
+        <exclude body1="CyberMice" body2="C4" />
+        <exclude body1="CyberMice" body2="C5" />
+        <exclude body1="CyberMice" body2="C6" />
+        <exclude body1="CyberMice" body2="Head" />
+        <exclude body1="Head" body2="C2" />
+        <exclude body1="Head" body2="C3" />
+        <exclude body1="Head" body2="C4" />
+        <exclude body1="Head" body2="C5" />
+        <exclude body1="Head" body2="C6" />
+        <exclude body1="C1" body2="C3" />
+        <exclude body1="C1" body2="C4" />
+        <exclude body1="C1" body2="C5" />
+        <exclude body1="C1" body2="C6" />
+        <exclude body1="C1" body2="C7" />
+        <exclude body1="C2" body2="C4" />
+        <exclude body1="C2" body2="C5" />
+        <exclude body1="C2" body2="C6" />
+        <exclude body1="C2" body2="C7" />
+        <exclude body1="C3" body2="C5" />
+        <exclude body1="C3" body2="C6" />
+        <exclude body1="C3" body2="C7" />
+        <exclude body1="C4" body2="C6" />
+        <exclude body1="C4" body2="C7" />
+        <exclude body1="C5" body2="C7" />
+
+        <exclude body1="CyberMice" body2="L2" />
+        <exclude body1="CyberMice" body2="L3" />
+        <exclude body1="CyberMice" body2="L4" />
+        <exclude body1="CyberMice" body2="L5" />
+        <exclude body1="CyberMice" body2="L6" />
+        <exclude body1="CyberMice" body2="Pelvis" />
+        <exclude body1="L5" body2="Pelvis" />
+        <exclude body1="L4" body2="Pelvis" />
+    </contact>
+
+    <sensor>
+        <gyro name="gyro" site="Head" />
+        <accelerometer name="accelerometer" site="Head"/>
+        <velocimeter name="velocimeter" site="Head"/>
+        <subtreelinvel name="torso_subtreelinvel" body="CyberMice" />
+        <subtreecom name="body_com" body="CyberMice" />
+    </sensor>
+</mujoco>
