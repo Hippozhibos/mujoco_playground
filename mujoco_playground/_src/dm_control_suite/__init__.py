@@ -36,11 +36,17 @@ from mujoco_playground._src.dm_control_suite import walker
 
 from mujoco_playground._src.dm_control_suite import cyber_mice
 
+from mujoco_playground._src.dm_control_suite import cartpole_cyberspinep1
+
 _envs = {
     "AcrobotSwingup": partial(acrobot.Balance, sparse=False),
     "AcrobotSwingupSparse": partial(acrobot.Balance, sparse=True),
     "BallInCup": ball_in_cup.BallInCup,
+
     "CartpoleBalance": partial(cartpole.Balance, swing_up=False, sparse=False),
+    "CartpoleBalance_CyberSpine": partial(cartpole_cyberspinep1.Balance, swing_up=False, sparse=False),
+
+
     "CartpoleBalanceSparse": partial(
         cartpole.Balance, swing_up=False, sparse=True
     ),
@@ -80,7 +86,10 @@ _cfgs = {
     "AcrobotSwingup": acrobot.default_config,
     "AcrobotSwingupSparse": acrobot.default_config,
     "BallInCup": ball_in_cup.default_config,
+
     "CartpoleBalance": cartpole.default_config,
+    "CartpoleBalance_CyberSpine": cartpole_cyberspinep1.default_config,
+    
     "CartpoleBalanceSparse": cartpole.default_config,
     "CartpoleSwingup": cartpole.default_config,
     "CartpoleSwingupSparse": cartpole.default_config,

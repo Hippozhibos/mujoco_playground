@@ -54,8 +54,8 @@ def brax_ppo_config(env_name: str) -> config_dict.ConfigDict:
     rl_config.action_repeat = 4
     rl_config.num_updates_per_batch = 4
 
-  elif env_name == "CyberMiceWalk":
-    rl_config.num_timesteps = 1_000_000
+  # elif env_name == "CyberMiceWalk":
+  #   rl_config.num_timesteps = 100_000
 
   return rl_config
 

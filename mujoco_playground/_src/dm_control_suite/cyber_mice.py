@@ -41,7 +41,7 @@ def default_config() -> config_dict.ConfigDict:
   return config_dict.create(
       ctrl_dt=0.025,
       sim_dt=0.005,  # 0.0025 in DM Control
-      episode_length=1000,
+      episode_length=1000, # changed from 1000 to 25, to fasten training process
       action_repeat=1,
       vision=False,
   )
@@ -239,47 +239,47 @@ class CyberMice(mjx_env.MjxEnv):
     return jp.clip(total_reward, 0, 10)  # 限制奖励范围
   
 
-  def render(
-    self,
-    trajectory: List[mjx_env.State],
-    height: int = 240,
-    width: int = 320,
-    camera: Optional[str] = None,
-    scene_option: Optional[mujoco.MjvOption] = None,
-    modify_scene_fns: Optional[Sequence[Callable[[mujoco.MjvScene], None]]] = None,
-    ) -> Sequence[np.ndarray]:
-    """重新定义渲染函数，加入 target 可视化功能"""
+  # def render(
+  #   self,
+  #   trajectory: List[mjx_env.State],
+  #   height: int = 240,
+  #   width: int = 320,
+  #   camera: Optional[str] = None,
+  #   scene_option: Optional[mujoco.MjvOption] = None,
+  #   modify_scene_fns: Optional[Sequence[Callable[[mujoco.MjvScene], None]]] = None,
+  #   ) -> Sequence[np.ndarray]:
+  #   """重新定义渲染函数，加入 target 可视化功能"""
     
-    # 使用基类的 render_array 函数
-    # 自定义的 `modify_scene_fns` 用于在渲染时修改场景
-    def modify_scene_fn(scene: mujoco.MjvScene):
-        """可视化 target 的函数"""
-        # 在场景中添加 target 的可视化元素（例如一个小的点或球体）
-        # 通过 `scene.add_marker` 添加一个标记，表示 target 位置
+  #   # 使用基类的 render_array 函数
+  #   # 自定义的 `modify_scene_fns` 用于在渲染时修改场景
+  #   def modify_scene_fn(scene):
+  #       """可视化 target 的函数"""
+  #       # 在场景中添加 target 的可视化元素（例如一个小的点或球体）
+  #       # 通过 `scene.add_marker` 添加一个标记，表示 target 位置
 
-        target_pos = self._target_pos  # 获取 target 的位置
+  #       target_pos = self._target_pos  # 获取 target 的位置
 
-        # 将目标位置转换为适当的坐标系（例如从世界坐标系到摄像机视角）
-        # 你可以使用 MjvScene 提供的 `scene.add_marker` 方法来可视化目标
-        scene.add_marker(
-            pos=target_pos,  # target 位置
-            color=(1.0, 0.0, 0.0),  # 使用红色表示目标
-            size=0.05,  # 设置目标标记的大小
-            type=mujoco.MjvGeom.SPHERE  # 使用球体来表示目标
-        )
+  #       # 将目标位置转换为适当的坐标系（例如从世界坐标系到摄像机视角）
+  #       # 你可以使用 MjvScene 提供的 `scene.add_marker` 方法来可视化目标
+  #       scene.add_marker(
+  #           pos=target_pos,  # target 位置
+  #           color=(1.0, 0.0, 0.0),  # 使用红色表示目标
+  #           size=0.1,  # 设置目标标记的大小
+  #           type=mujoco.MjvGeom.SPHERE  # 使用球体来表示目标
+  #       )
     
-    # 如果没有提供 scene_option，则使用默认设置
-    scene_option = scene_option or mujoco.MjvOption()
+  #   # # 如果没有提供 scene_option，则使用默认设置
+  #   # scene_option = scene_option or mujoco.MjvOption()
 
-    # 调用基类的 render 函数，并传入我们的 `modify_scene_fn`
-    return super().render(
-        trajectory,
-        height=height,
-        width=width,
-        camera=camera,
-        scene_option=scene_option,
-        modify_scene_fns=[modify_scene_fn]  # 将自定义的渲染修改函数传入
-    )
+  #   # 调用基类的 render 函数，并传入我们的 `modify_scene_fn`
+  #   return super().render(
+  #       trajectory,
+  #       height=height,
+  #       width=width,
+  #       camera=camera,
+  #       scene_option=scene_option,
+  #       modify_scene_fns=[modify_scene_fn]  # 将自定义的渲染修改函数传入
+  #   )
 
 
   
