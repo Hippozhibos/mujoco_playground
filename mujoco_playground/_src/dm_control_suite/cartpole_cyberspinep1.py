@@ -100,11 +100,20 @@ class Balance(mjx_env.MjxEnv):
     self._mjx_model = mjx.put_model(self._mj_model)
     self._post_init()
 
-    self.cyberspine, self.cyberspine_params = cyber_spine.init_cyberspine_p1(
-      action_size=self._mjx_model.na, 
-      muscle_activity_size=10 * self._mjx_model.na)
+    # self.MSJcomplexity = 10
 
-    self.ms_jacobian = ms_jacobian.MS_Jacobian(muscle_activity_size=10, action_size=self._mjx_model.na)
+    # self.cyberspine, self.cyberspine_params = cyber_spine.init_cyberspine_p1(
+    #   action_size=self._mjx_model.nu, 
+    #   muscle_activity_size= self.MSJcomplexity * self._mjx_model.nu)
+
+    # self.ms_jacobian = ms_jacobian.MS_Jacobian(muscle_activity_size=self.MSJcomplexity * self._mjx_model.nu, action_size=self._mjx_model.nu)
+
+    self.MSJcomplexity = 10
+    self.cyberspine, self.cyberspine_params = cyber_spine.init_cyberspine_p1(
+      action_size=self._mjx_model.nu, 
+      MSJcomplexity= self.MSJcomplexity)
+    self.ms_jacobian = ms_jacobian.MS_Jacobian(MSJcomplexity= self.MSJcomplexity, action_size=self._mjx_model.nu)
+
 
     if self._vision:
       try:

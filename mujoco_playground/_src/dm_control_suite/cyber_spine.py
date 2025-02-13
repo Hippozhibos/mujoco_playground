@@ -6,11 +6,12 @@ from flax.core import freeze, unfreeze
 
 class CyberSpine_P1(nn.Module):
     action_size: int
-    muscle_activity_size: int
+    MSJcomplexity: int
     hidden_size: int = 128  # 隐藏层大小，可调
 
     def setup(self):
         """定义神经网络的层"""
+        self.muscle_activity_size = self.action_size * self.MSJcomplexity
         print(f"Initializing with action_size={self.action_size}, muscle_activity_size={self.muscle_activity_size}")
         self.dense1 = nn.Dense(self.hidden_size)
         self.dense2 = nn.Dense(self.hidden_size)
@@ -33,9 +34,9 @@ class CyberSpine_P1(nn.Module):
         raise NotImplementedError("CyberSpine_P1.update() 方法未实现")
 
 # 初始化 CyberSpine_P1
-def init_cyberspine_p1(action_size, muscle_activity_size, seed=42):
+def init_cyberspine_p1(action_size, MSJcomplexity, seed=42):
     """初始化神经网络并生成初始参数"""
-    model = CyberSpine_P1(action_size=action_size, muscle_activity_size=muscle_activity_size)
+    model = CyberSpine_P1(action_size=action_size, MSJcomplexity=MSJcomplexity)
     key = jax.random.PRNGKey(seed)
     params = model.init(key, jp.ones((action_size,)))  # 用 1 作为 dummy 输入初始化参数
     return model, params

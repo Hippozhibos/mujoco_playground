@@ -26,6 +26,9 @@ from mujoco_playground._src import mjx_env
 from mujoco_playground._src import reward
 from mujoco_playground._src.dm_control_suite import common
 
+from mujoco_playground._src.dm_control_suite import cyber_spine
+from mujoco_playground._src.dm_control_suite import ms_jacobian
+
 _XML_PATH = mjx_env.ROOT_PATH / "dm_control_suite" / "xmls" / "humanoid.xml"
 # Height of head above which stand reward is 1.
 _STAND_HEIGHT = 1.4
@@ -73,6 +76,12 @@ class Humanoid(mjx_env.MjxEnv):
     self._mj_model.opt.timestep = self.sim_dt
     self._mjx_model = mjx.put_model(self._mj_model)
     self._post_init()
+
+    self.MSJcomplexity = 10
+    self.cyberspine, self.cyberspine_params = cyber_spine.init_cyberspine_p1(
+      action_size=self._mjx_model.nu, 
+      MSJcomplexity= self.MSJcomplexity)
+    self.ms_jacobian = ms_jacobian.MS_Jacobian(MSJcomplexity= self.MSJcomplexity, action_size=self._mjx_model.nu)
 
   def _post_init(self) -> None:
     self._head_body_id = self.mj_model.body("head").id
