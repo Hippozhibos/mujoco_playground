@@ -109,7 +109,7 @@ class Balance(mjx_env.MjxEnv):
     # self.ms_jacobian = ms_jacobian.MS_Jacobian(muscle_activity_size=self.MSJcomplexity * self._mjx_model.nu, action_size=self._mjx_model.nu)
 
     self.MSJcomplexity = 10
-    self.cyberspine, self.cyberspine_params = cyber_spine.init_cyberspine_p1(
+    self.CSP1, self.CSP1_params = cyber_spine.init_cyberspine_p1(
       action_size=self._mjx_model.nu, 
       MSJcomplexity= self.MSJcomplexity)
     self.ms_jacobian = ms_jacobian.MS_Jacobian(MSJcomplexity= self.MSJcomplexity, action_size=self._mjx_model.nu)
@@ -207,15 +207,16 @@ class Balance(mjx_env.MjxEnv):
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     ## CyberSpine_P1: action -> muscle activity
-    muscle_activity = self.cyberspine.apply(self.cyberspine_params, action)
+    muscle_activity = self.CSP1.apply(self.CSP1_params, action)
 
     ## MS_Jacobian: muscle activty -> torque
     torque = self.ms_jacobian.compute_torque(muscle_activity)
 
     data = mjx_env.step(self.mjx_model, state.data, torque, self.n_substeps)
-    reward = self._get_reward(data, action, state.info, state.metrics)  # pylint: disable=redefined-outer-name
+    reward = self._get_reward(data, torque, state.info, state.metrics)  # pylint: disable=redefined-outer-name
 
     obs = self._get_obs(data, state.info)
+
     if self._vision:
       _, rgb, _ = self.renderer.render(state.info["render_token"], data)
       # Update observation buffer

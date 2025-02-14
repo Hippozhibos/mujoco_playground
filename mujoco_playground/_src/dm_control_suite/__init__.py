@@ -35,8 +35,8 @@ from mujoco_playground._src.dm_control_suite import swimmer
 from mujoco_playground._src.dm_control_suite import walker
 
 from mujoco_playground._src.dm_control_suite import cyber_mice
-
 from mujoco_playground._src.dm_control_suite import cartpole_cyberspinep1
+from mujoco_playground._src.dm_control_suite import humanoid_cyberspine
 
 _envs = {
     "AcrobotSwingup": partial(acrobot.Balance, sparse=False),
@@ -66,8 +66,9 @@ _envs = {
     "HopperHop": partial(hopper.Hopper, hopping=True),
     "HopperStand": partial(hopper.Hopper, hopping=False),
     "HumanoidStand": partial(humanoid.Humanoid, move_speed=0.0),
-    "HumanoidWalk": partial(humanoid.Humanoid, move_speed=humanoid.WALK_SPEED),
 
+    "HumanoidWalk": partial(humanoid.Humanoid, move_speed=humanoid.WALK_SPEED),
+    "HumanoidWalkCyberSpine": partial(humanoid_cyberspine.Humanoid, move_speed=humanoid.WALK_SPEED),
     "CyberMiceWalk": partial(cyber_mice.CyberMice, move_speed=cyber_mice.WALK_SPEED),
 
     "HumanoidRun": partial(humanoid.Humanoid, move_speed=humanoid.RUN_SPEED),
@@ -102,8 +103,9 @@ _cfgs = {
     "HopperStand": hopper.default_config,
     "HumanoidRun": humanoid.default_config,
     "HumanoidStand": humanoid.default_config,
-    "HumanoidWalk": humanoid.default_config,
 
+    "HumanoidWalk": humanoid.default_config,
+    "HumanoidWalkCyberSpine": humanoid_cyberspine.default_config,
     "CyberMiceWalk": cyber_mice.default_config,
 
     "PendulumSwingup": pendulum.default_config,
