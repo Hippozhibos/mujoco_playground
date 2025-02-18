@@ -32,6 +32,8 @@ from mujoco_playground._src.dm_control_suite import common
 from mujoco_playground._src.dm_control_suite import ms_jacobian
 from mujoco_playground._src.dm_control_suite import cyber_spine_structure
 from mujoco_playground._src.dm_control_suite import cyber_spine_train
+from mujoco_playground._src.dm_control_suite import cyber_spine_structure_nnx
+from mujoco_playground._src.dm_control_suite import cyber_spine_train_nnx
 
 
 
@@ -114,20 +116,35 @@ class Balance(mjx_env.MjxEnv):
 
     self.ms_jacobian = ms_jacobian.MS_Jacobian(MSJcomplexity= self.MSJcomplexity, action_size=self.action_size)
 
-    # if self.csp1_model is None:
-    self.csp1_model = cyber_spine_structure.CyberSpine_P1(action_size=self.action_size, MSJcomplexity=self.MSJcomplexity, rngs=nnx.Rngs(0))
+    # # if self.csp1_model is None:
+    # self.csp1_model = cyber_spine_structure.CyberSpine_P1(action_size=self.action_size, MSJcomplexity=self.MSJcomplexity, rngs=nnx.Rngs(0))
+    # # self.csp1_params = self.csp1_model.init(jax.random.PRNGKey(42), jp.ones((self.action_size,)))
+    
+    # print("Caution: Reset csp1 params !!!!")
+    # self.csp1_state = cyber_spine_train.create_train_state(self.csp1_model, self.csp1_params)
+
+    # # if self.cc_model is None:
+    # self.cc_model = cyber_spine_structure.CC_net(output_size=self.output_size)
+    # self.muscle_activity_size = self.MSJcomplexity*self.action_size
+    # self.cc_params = self.cc_model.init(jax.random.PRNGKey(42), jp.ones((self.muscle_activity_size,)))
+    
+    # print("Caution: Reset CC params !!!!")
+    # self.cc_state = cyber_spine_train.create_train_state(self.cc_model, self.cc_params)
+
+    ## nnx part
+    self.csp1_model = cyber_spine_structure_nnx.CyberSpine_P1(action_size=self.action_size, MSJcomplexity=self.MSJcomplexity, rngs=nnx.Rngs(0))
     # self.csp1_params = self.csp1_model.init(jax.random.PRNGKey(42), jp.ones((self.action_size,)))
     
     print("Caution: Reset csp1 params !!!!")
-    self.csp1_state = cyber_spine_train.create_train_state(self.csp1_model, self.csp1_params)
+    self.csp1_state = cyber_spine_train_nnx.create_train_state(self.csp1_model)
 
-    # if self.cc_model is None:
-    self.cc_model = cyber_spine_structure.CC_net(output_size=self.output_size)
     self.muscle_activity_size = self.MSJcomplexity*self.action_size
-    self.cc_params = self.cc_model.init(jax.random.PRNGKey(42), jp.ones((self.muscle_activity_size,)))
+    self.cc_model = cyber_spine_structure_nnx.CC_net(muscle_activity_size=self.muscle_activity_size, output_size=self.output_size, rngs=nnx.Rngs(0))
+    
+    # self.cc_params = self.cc_model.init(jax.random.PRNGKey(42), jp.ones((self.muscle_activity_size,)))
     
     print("Caution: Reset CC params !!!!")
-    self.cc_state = cyber_spine_train.create_train_state(self.cc_model, self.cc_params)
+    self.cc_state = cyber_spine_train_nnx.create_train_state(self.cc_model)
 
     self.buffer = []  # 用于存储 (action, obs, obs_hat) 对
     self.buffer_size = 10  # 每满 10 对就进行一次更新
@@ -226,7 +243,7 @@ class Balance(mjx_env.MjxEnv):
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     # CyberSpine_P1: action -> muscle activity
-    muscle_activity = self.csp1_model.apply(self.csp1_params, action)
+    muscle_activity = self.csp1_model(action)
 
     # MS_Jacobian: muscle activty -> torque
     torque = self.ms_jacobian.compute_torque(muscle_activity)
@@ -238,7 +255,7 @@ class Balance(mjx_env.MjxEnv):
     reward = self._get_reward(data, torque, state.info, state.metrics)  # pylint: disable=redefined-outer-name
 
     ## CCnet: muscle activity -> obs_hat
-    obs_hat = self.cc_model.apply(self.cc_params, muscle_activity)
+    obs_hat = self.cc_model(muscle_activity)
  
 
     # data = mjx_env.step(self.mjx_model, state.data, action, self.n_substeps)
@@ -257,8 +274,8 @@ class Balance(mjx_env.MjxEnv):
         obs_hat_batch = jp.stack(obs_hat_batch)
 
         # 更新 CSP1 和 CC_net
-        self.csp1_state, self.cc_state, loss = cyber_spine_train.train_step_joint(self.csp1_state, self.cc_state, obs_batch, obs_hat_batch)
-        self.cc_loss_history.append(loss)
+        cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
+        # self.cc_loss_history.append(loss)
 
         # 更新完毕后，清空缓冲区
         self.buffer.clear()

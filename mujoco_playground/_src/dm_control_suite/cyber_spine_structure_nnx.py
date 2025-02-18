@@ -1,7 +1,7 @@
 ## Define the structure of CyberSpine network
 
 import jax
-import jax.numpy as jp
+import jax.numpy as jp, random
 import jax.nn as jnn
 import optax
 from flax import linen as nn
@@ -9,35 +9,15 @@ from flax import nnx as nnx
 from flax.core import freeze, unfreeze
 from flax.training import train_state
 
-# class CyberSpine_P1(nn.Module):
-#     action_size: int
-#     MSJcomplexity: int
-#     hidden_size: int = 512  # 隐藏层大小，可调
+class Weights(nnx.Module):
+  def __init__(self, kernel: jax.Array, bias: jax.Array):
+    self.kernel, self.bias = nnx.Param(kernel), nnx.Param(bias)
 
-#     def setup(self):
-#         """定义神经网络的层"""
-#         if not hasattr(self, 'dense1'):  # 确保 setup 只执行一次
-#             self.muscle_activity_size = self.action_size * self.MSJcomplexity
-#             print(f"Initializing with action_size={self.action_size}, muscle_activity_size={self.muscle_activity_size}")
-#             self.dense1 = nn.Dense(self.hidden_size)
-#             self.dense2 = nn.Dense(self.hidden_size)
-#             self.output_layer = nn.Dense(self.muscle_activity_size)
-
-#     def __call__(self, action: jp.ndarray) -> jp.ndarray:
-#         """前向计算：从 action 计算 muscle_activity"""
-#         print(f"Input to dense1: {action.shape}")
-#         x = jnn.relu(self.dense1(action))
-#         print(f"Output of dense1: {x.shape}")
-#         x = jnn.relu(self.dense2(x))
-#         print(f"Output of dense2: {x.shape}")
-#         muscle_activity = jnn.sigmoid(self.output_layer(x))  # 限制在 [0,1]
-#         print(f"Output of network: {muscle_activity.shape}")
-#         return muscle_activity
-
-#     # def update(self, params, gradients):
-#     #     """预留的更新接口 (未来用于优化网络权重)"""
-#     #     # 目前不实现更新逻辑，留作未来训练使用
-#     #     raise NotImplementedError("CyberSpine_P1.update() 方法未实现")
+def create_weights(seed: jax.Array):
+  return Weights(
+    kernel=random.uniform(random.key(seed), (2, 3)),
+    bias=jp.zeros((3,)),
+  )
 
 class CyberSpine_P1(nnx.Module):
     # action_size: int
@@ -120,23 +100,20 @@ def init_cyberspine_p2(muscle_activity_size, seed=42):
     return model, params
 
 
-class CC_net(nn.Module):
+class CC_net(nnx.Module):
     """CC_net：从 CyberSpine_P1 输出的高维肌肉活动预测 obs_hat"""
-    output_size: int  # 预测的输出维度（如：观察值的维度）
-    hidden_size: int = 512  # 隐藏层的大小，可以调节
-
-    def setup(self):
+    def __init__(self, muscle_activity_size: int, output_size: int, rngs:nnx.Rngs, hidden_size: int = 512):
         """定义神经网络的层"""
-        self.dense1 = nn.Dense(self.hidden_size)
-        self.dense2 = nn.Dense(self.hidden_size)
-        self.output_layer = nn.Dense(self.output_size)  # 输出预测的观察值（obs_hat）
+        self.dense1 = nnx.Linear(muscle_activity_size, hidden_size, rngs=rngs)
+        self.dense2 = nnx.Linear(hidden_size, hidden_size, rngs=rngs)
+        self.output_layer = nnx.Linear(hidden_size, output_size, rngs=rngs)  # 输出预测的观察值（obs_hat）
 
     def __call__(self, muscle_activity: jp.ndarray) -> jp.ndarray:
         """
         前向计算：从 CyberSpine_P1 输出的高维肌肉活动预测 obs_hat
         """
-        x = nn.relu(self.dense1(muscle_activity))
-        x = nn.relu(self.dense2(x))
+        x = nnx.relu(self.dense1(muscle_activity))
+        x = nnx.relu(self.dense2(x))
         obs_hat = self.output_layer(x)  # 预测观察值
         return obs_hat
 
