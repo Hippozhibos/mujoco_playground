@@ -26,8 +26,9 @@ from mujoco_playground._src import mjx_env
 from mujoco_playground._src import reward
 from mujoco_playground._src.dm_control_suite import common
 
-from mujoco_playground._src.dm_control_suite import cyber_spine
 from mujoco_playground._src.dm_control_suite import ms_jacobian
+from mujoco_playground._src.dm_control_suite import cyber_spine_structure
+from mujoco_playground._src.dm_control_suite import cyber_spine_train
 
 _XML_PATH = mjx_env.ROOT_PATH / "dm_control_suite" / "xmls" / "humanoid.xml"
 # Height of head above which stand reward is 1.
@@ -78,10 +79,31 @@ class Humanoid(mjx_env.MjxEnv):
     self._post_init()
 
     self.MSJcomplexity = 10
-    self.cyberspine, self.cyberspine_params = cyber_spine.init_cyberspine_p1(
-      action_size=self._mjx_model.nu, 
-      MSJcomplexity= self.MSJcomplexity)
-    self.ms_jacobian = ms_jacobian.MS_Jacobian(MSJcomplexity= self.MSJcomplexity, action_size=self._mjx_model.nu)
+    self.batch = 8
+
+    # 调用 _get_obs 函数获取 obs
+    rng = jax.random.PRNGKey(0)
+    self.output_size = self.obs_size(rng)
+    # self.output_size = 4
+
+    self.ms_jacobian = ms_jacobian.MS_Jacobian(MSJcomplexity= self.MSJcomplexity, action_size=self.action_size)
+
+    self.csp1_model = cyber_spine_structure.CyberSpine_P1(action_size=self.action_size, MSJcomplexity=self.MSJcomplexity, hidden_size=1024)
+    self.csp1_params = self.csp1_model.init(jax.random.PRNGKey(42), jp.ones((self.action_size,)))
+    print("Caution: Reset csp1 params !!!!")
+    self.csp1_state = cyber_spine_train.create_train_state(self.csp1_model, self.csp1_params)
+
+    self.cc_model = cyber_spine_structure.CC_net(output_size=self.output_size, hidden_size=1024)
+    self.muscle_activity_size = self.MSJcomplexity*self.action_size
+    self.cc_params = self.cc_model.init(jax.random.PRNGKey(42), jp.ones((self.muscle_activity_size,)))
+    print("Caution: Reset CC params !!!!")
+    self.cc_state = cyber_spine_train.create_train_state(self.cc_model, self.cc_params)
+
+    self.buffer = []  # 用于存储 (action, obs, obs_hat) 对
+    self.buffer_size = 10  # 每满 10 对就进行一次更新
+
+    self.cc_loss_history = []
+
 
   def _post_init(self) -> None:
     self._head_body_id = self.mj_model.body("head").id
@@ -112,9 +134,37 @@ class Humanoid(mjx_env.MjxEnv):
     return mjx_env.State(data, obs, reward, done, metrics, info)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
-    data = mjx_env.step(self.mjx_model, state.data, action, self.n_substeps)
-    reward = self._get_reward(data, action, state.info, state.metrics)  # pylint: disable=redefined-outer-name
+    ## CyberSpine_P1: action -> muscle activity
+    muscle_activity = self.csp1_model.apply(self.csp1_params, action)
+
+    # MS_Jacobian: muscle activty -> torque
+    torque = self.ms_jacobian.compute_torque(muscle_activity)
+
+    data = mjx_env.step(self.mjx_model, state.data, torque, self.n_substeps)
+    reward = self._get_reward(data, torque, state.info, state.metrics)  # pylint: disable=redefined-outer-name
+    # data = mjx_env.step(self.mjx_model, state.data, action, self.n_substeps)
+    # reward = self._get_reward(data, action, state.info, state.metrics)  # pylint: disable=redefined-outer-name
+
     obs = self._get_obs(data, state.info)
+    ## CCnet: muscle activity -> obs_hat
+    obs_hat = self.cc_model.apply(self.cc_params, muscle_activity)
+
+    self.buffer.append((obs, obs_hat))
+    # 如果缓冲区已满，进行一次训练步骤（更新 CSP1 和 CC_net）
+    if len(self.buffer) >= self.buffer_size:
+        # 进行训练（注意：我们可能需要提取合适的数据来进行训练）
+        obs_batch, obs_hat_batch = zip(*self.buffer)  
+        obs_batch = jp.stack(obs_batch) # 将列表转换为数组
+        obs_hat_batch = jp.stack(obs_hat_batch)
+
+        # 更新 CSP1 和 CC_net
+        self.csp1_state, self.cc_state, loss = cyber_spine_train.train_step_joint(self.csp1_state, self.cc_state, obs_batch, obs_hat_batch)
+        self.cc_loss_history.append(loss)
+
+        # 更新完毕后，清空缓冲区
+        self.buffer.clear()
+
+
     done = jp.isnan(data.qpos).any() | jp.isnan(data.qvel).any()
     done = done.astype(float)
     return mjx_env.State(data, obs, reward, done, state.metrics, state.info)
@@ -129,6 +179,13 @@ class Humanoid(mjx_env.MjxEnv):
         self._center_of_mass_velocity(data),
         data.qvel,
     ])
+    
+  def obs_size(self, rng: jax.Array) -> int:
+    data = mjx_env.init(self.mjx_model)
+    info = {"rng": rng}
+    obs = self._get_obs(data, info)
+    print(f"obs:{obs}")
+    return len(obs)
 
   def _get_reward(
       self,
@@ -223,6 +280,10 @@ class Humanoid(mjx_env.MjxEnv):
   @property
   def action_size(self) -> int:
     return self.mjx_model.nu
+  
+  # @property
+  # def action_size(self) -> int:
+  #   return self.mjx_model.nu * self.MSJcomplexity
 
   @property
   def mj_model(self) -> mujoco.MjModel:
