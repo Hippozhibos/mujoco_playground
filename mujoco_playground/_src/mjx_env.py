@@ -179,6 +179,7 @@ class State:
   done: jax.Array
   metrics: Dict[str, jax.Array]
   info: Dict[str, Any]
+  buffer: List[tuple]
 
   def tree_replace(
       self, params: Dict[str, Optional[jax.typing.ArrayLike]]

@@ -239,7 +239,9 @@ class Balance(mjx_env.MjxEnv):
       info.update({"obs_history": obs_history})
       obs = {"pixels/view_0": obs_history.transpose(1, 2, 0)}
 
-    return mjx_env.State(data, obs, reward, done, metrics, info)
+    buffer = []
+
+    return mjx_env.State(data, obs, reward, done, metrics, info, buffer)
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     # CyberSpine_P1: action -> muscle activity
@@ -263,22 +265,24 @@ class Balance(mjx_env.MjxEnv):
 
     obs = self._get_obs(data, state.info)
 
-    self.buffer.append((obs, obs_hat))
-    print(f"Length of buffer: {len(self.buffer)}")
+    buffer = state.buffer
+    buffer.append((obs, obs_hat))
 
-    # 如果缓冲区已满，进行一次训练步骤（更新 CSP1 和 CC_net）
-    if len(self.buffer) >= self.buffer_size:
-        # 进行训练（注意：我们可能需要提取合适的数据来进行训练）
-        obs_batch, obs_hat_batch = zip(*self.buffer)  
-        obs_batch = jp.stack(obs_batch) # 将列表转换为数组
-        obs_hat_batch = jp.stack(obs_hat_batch)
+    # # 如果缓冲区已满，进行一次训练步骤（更新 CSP1 和 CC_net）
+    # if len(self.buffer) >= self.buffer_size:
+    #     print("Training step triggered")
+    #     # 进行训练（注意：我们可能需要提取合适的数据来进行训练）
+    #     obs_batch, obs_hat_batch = zip(*self.buffer)  
+    #     obs_batch = jp.stack(obs_batch) # 将列表转换为数组
+    #     obs_hat_batch = jp.stack(obs_hat_batch)
 
-        # 更新 CSP1 和 CC_net
-        cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
-        # self.cc_loss_history.append(loss)
+    #     # 更新 CSP1 和 CC_net
+    #     cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
+    #     # self.cc_loss_history.append(loss)
+    #     print("Training step completed")  # 确认训练步骤是否完成
 
-        # 更新完毕后，清空缓冲区
-        self.buffer.clear()
+    #     # 更新完毕后，清空缓冲区
+    #     self.buffer.clear()
 
     if self._vision:
       _, rgb, _ = self.renderer.render(state.info["render_token"], data)
@@ -293,7 +297,27 @@ class Balance(mjx_env.MjxEnv):
 
     done = jp.isnan(data.qpos).any() | jp.isnan(data.qvel).any()
     done = done.astype(float)
-    return mjx_env.State(data, obs, reward, done, state.metrics, state.info)
+    return mjx_env.State(data, obs, reward, done, state.metrics, state.info, buffer)
+  
+  # 将训练步骤放在外部
+  # @jax.jit
+  def train_step(self):
+      # 训练步骤：用全局缓冲区进行训练
+      if len(self.buffer) >= self.buffer_size:
+          print("Training step triggered")
+          obs_batch, obs_hat_batch = zip(*self.buffer)
+          obs_batch = jp.stack(obs_batch)
+          obs_hat_batch = jp.stack(obs_hat_batch)
+
+          # 更新模型
+          # loss = cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
+          cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
+          
+          # 更新后清空缓冲区
+          self.buffer.clear()
+          print("Training step completed")  # 确认训练步骤是否完成
+
+      # return loss
 
   def _get_obs(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
     del info  # Unused.
