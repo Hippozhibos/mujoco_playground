@@ -20,18 +20,6 @@ def create_weights(seed: jax.Array):
   )
 
 class CyberSpine_P1(nnx.Module):
-    # action_size: int
-    # MSJcomplexity: int
-    # hidden_size: int = 512  # 隐藏层大小，可调
-
-    # def setup(self, action_size: int, MSJcomplexity: int, hidden_size: int = 512 ):
-    #     """定义神经网络的层"""
-    #     self.muscle_activity_size = action_size * MSJcomplexity
-    #     print(f"Initializing with action_size={self.action_size}, muscle_activity_size={self.muscle_activity_size}")
-    #     self.dense1 = nnx.Dense(hidden_size)
-    #     self.dense2 = nnx.Dense(hidden_size)
-    #     self.output_layer = nnx.Dense(self.muscle_activity_size)
-
     def __init__(self, action_size: int, MSJcomplexity: int, rngs:nnx.Rngs,hidden_size: int = 512):
         """定义神经网络的层"""
         self.muscle_activity_size = action_size * MSJcomplexity
@@ -129,3 +117,47 @@ def init_cc_net(muscle_activity_size: int, output_size: int, seed: int = 42):
     # 用全1的 muscle_activity 作为 dummy 输入来初始化参数
     params = model.init(key, jp.ones((muscle_activity_size,)))  
     return model, params
+
+# 定义组合网络
+class CyberSpine_v2(nnx.Module):
+    def __init__(self, 
+                 action_size: int,
+                 MSJcomplexity: int,
+                 output_size: int,
+                 rngs:nnx.Rngs,
+                 hidden_size: int = 512):
+        ## P1
+        self.muscle_activity_size = action_size * MSJcomplexity
+        print(f"Initializing with action_size={action_size}, muscle_activity_size={self.muscle_activity_size}")
+        self.p1_dense1 = nnx.Linear(action_size, hidden_size, rngs=rngs)
+        self.p1_dense2 = nnx.Linear(hidden_size, hidden_size, rngs=rngs)
+        self.p1_output_layer = nnx.Linear(hidden_size, self.muscle_activity_size, rngs=rngs)
+
+        ## P2
+        self.p2_dense1 = nnx.Linear(self.muscle_activity_size, hidden_size, rngs=rngs)
+        self.p2_dense2 = nnx.Linear(hidden_size, hidden_size, rngs=rngs)
+        self.p2_output_layer = nnx.Linear(hidden_size, output_size, rngs=rngs)  # 输出预测的观察值（obs_hat）
+
+    def __call__(self, action: jp.ndarray, predict=True) -> jp.ndarray:
+        """前向计算：从 action 计算 muscle_activity"""
+        print(f"Input to dense1: {action.shape}")
+        x1 = nnx.relu(self.p1_dense1(action))
+        print(f"Output of dense1: {x1.shape}")
+        x1 = nnx.relu(self.p1_dense2(x1))
+        print(f"Output of dense2: {x1.shape}")
+        muscle_activity = nnx.sigmoid(self.p1_output_layer(x1))  # 限制在 [0,1]
+        print(f"Output of network: {muscle_activity.shape}")
+
+        if not predict:
+            return muscle_activity
+        
+        else:
+            x2 = nnx.relu(self.p2_dense1(muscle_activity))
+            x2 = nnx.relu(self.p2_dense2(x2))
+            obs_hat = self.p2_output_layer(x2)  # 预测观察值
+        
+            return muscle_activity, obs_hat
+        
+def get_optimizer(model):
+    return nnx.Optimizer(model, optax.adam(1e-3))
+

@@ -215,4 +215,3 @@ class MS_Jacobian:
         torque = jp.clip(torque, -1.0, 1.0)
 
         return torque
-

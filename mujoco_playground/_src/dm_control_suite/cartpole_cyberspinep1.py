@@ -146,10 +146,19 @@ class Balance(mjx_env.MjxEnv):
     print("Caution: Reset CC params !!!!")
     self.cc_state = cyber_spine_train_nnx.create_train_state(self.cc_model)
 
-    self.buffer = []  # 用于存储 (action, obs, obs_hat) 对
-    self.buffer_size = 10  # 每满 10 对就进行一次更新
+    ## CyberSpine_v2
+    self.CyberSpine_v2 = cyber_spine_structure_nnx.CyberSpine_v2(self.action_size, 
+                                                                 self.MSJcomplexity,
+                                                                 self.output_size,
+                                                                 rngs=nnx.Rngs(0))
+    
+    self.CyberSpine_v2_optimizer = cyber_spine_structure_nnx.get_optimizer(self.CyberSpine_v2)
 
-    self.cc_loss_history = []
+
+    # self.buffer = []  # 用于存储 (action, obs, obs_hat) 对
+    # self.buffer_size = 10  # 每满 10 对就进行一次更新
+
+    self.loss_history = []
 
     if self._vision:
       try:
@@ -245,7 +254,10 @@ class Balance(mjx_env.MjxEnv):
 
   def step(self, state: mjx_env.State, action: jax.Array) -> mjx_env.State:
     # CyberSpine_P1: action -> muscle activity
-    muscle_activity = self.csp1_model(action)
+    # muscle_activity = self.csp1_model(action)
+
+    muscle_activity, obs_hat = self.CyberSpine_v2(action)
+    # muscle_activity = self.CyberSpine_v2(action, predict = False)
 
     # MS_Jacobian: muscle activty -> torque
     torque = self.ms_jacobian.compute_torque(muscle_activity)
@@ -257,7 +269,7 @@ class Balance(mjx_env.MjxEnv):
     reward = self._get_reward(data, torque, state.info, state.metrics)  # pylint: disable=redefined-outer-name
 
     ## CCnet: muscle activity -> obs_hat
-    obs_hat = self.cc_model(muscle_activity)
+    # obs_hat = self.cc_model(muscle_activity)
  
 
     # data = mjx_env.step(self.mjx_model, state.data, action, self.n_substeps)
@@ -299,25 +311,37 @@ class Balance(mjx_env.MjxEnv):
     done = done.astype(float)
     return mjx_env.State(data, obs, reward, done, state.metrics, state.info, buffer)
   
-  # 将训练步骤放在外部
-  # @jax.jit
-  def train_step(self):
+  def reset_buffer(self, state: mjx_env.State)-> mjx_env.State:
+    buffer = []
+    return mjx_env.State(state.data, state.obs, state.reward, state.done, state.metrics, state.info, buffer)
+
+  def train_step(self,state: mjx_env.State, buffer_size:int=10) -> mjx_env.State:
+      loss = None
       # 训练步骤：用全局缓冲区进行训练
-      if len(self.buffer) >= self.buffer_size:
-          print("Training step triggered")
-          obs_batch, obs_hat_batch = zip(*self.buffer)
-          obs_batch = jp.stack(obs_batch)
-          obs_hat_batch = jp.stack(obs_hat_batch)
+      if len(state.buffer) >= buffer_size:
+        print("Training step triggered")
+        obs_batch, obs_hat_batch = zip(*state.buffer)
+        obs_batch = jp.stack(obs_batch)
+        obs_hat_batch = jp.stack(obs_hat_batch)
 
-          # 更新模型
-          # loss = cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
-          cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
-          
-          # 更新后清空缓冲区
-          self.buffer.clear()
-          print("Training step completed")  # 确认训练步骤是否完成
+        # 更新模型
+        # loss = cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
+        # cyber_spine_train_nnx.train_step_joint(self.csp1_model, self.cc_model, obs_batch, obs_hat_batch)
+        
+        loss = cyber_spine_train_nnx.cyberspine_v2_train_step(self.CyberSpine_v2,
+                                                              self.CyberSpine_v2_optimizer,
+                                                              obs_batch,
+                                                              obs_hat_batch)
+        
+        self.loss_history.append(loss)
+        # self.loss = loss
+        # loss_history.append(loss)
 
-      # return loss
+        state = self.reset_buffer(state)
+        print("Training step completed")  # 确认训练步骤是否完成
+
+      return loss, state
+      
 
   def _get_obs(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
     del info  # Unused.

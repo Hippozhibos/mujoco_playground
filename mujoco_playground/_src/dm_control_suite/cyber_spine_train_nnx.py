@@ -12,9 +12,9 @@ from tensorboardX import SummaryWriter
 import os
 
 # 
-logdir = './logs'
-os.makedirs(logdir, exist_ok=True)
-writer = SummaryWriter(logdir=logdir)
+# logdir = './logs'
+# os.makedirs(logdir, exist_ok=True)
+# writer = SummaryWriter(logdir=logdir)
 
 # ============= 2. 定义通用 TrainState 和创建函数 =============
 def create_train_state(model: nnx.Module, learning_rate: float = 1e-3):
@@ -84,17 +84,44 @@ def train_step_joint(csp1_model,
     - true_obs_batch: shape [batch_size, obs_dim]
     """
 
-    def loss_fn(model):
-        return optax.softmax_cross_entropy_with_integer_labels(obs_hat_batch, obs_batch).mean()
+    def loss_fn(csp1_model, cc_model, obs_batch, obs_hat_batch):
+        return mse_loss_fn(obs_batch, obs_hat_batch)
 
-    csp1_grads = nnx.grad(loss_fn)(csp1_model)
+    # loss = mse_loss_fn(obs_batch, obs_hat_batch)
+    
+    # grads = nnx.grad(loss_fn)(csp1_model, cc_model, obs_batch, obs_hat_batch)
+    grads = nnx.grad(loss_fn)(csp1_model, cc_model, obs_batch, obs_hat_batch)
+
     _, csp1_params, csp1_rest = nnx.split(csp1_model, nnx.Param, ...)
-    csp1_params = jax.tree.map(lambda p, g: p - 0.1 * g, csp1_params, csp1_grads)
+    csp1_params = jax.tree.map(lambda p, g: p - 0.1 * g, csp1_params, grads)
     nnx.update(csp1_model, nnx.GraphState.merge(csp1_params, csp1_rest))
 
-    cc_grads = nnx.grad(loss_fn)(cc_model)
+    # cc_grads = nnx.grad(loss_fn)(csp1_model, cc_model, obs_batch, obs_hat_batch)
+    
     _, cc_params, cc_rest = nnx.split(cc_model, nnx.Param, ...)
-    cc_params = jax.tree.map(lambda p, g: p - 0.1 * g, cc_params, cc_grads)
+    cc_params = jax.tree.map(lambda p, g: p - 0.1 * g, cc_params, grads)
     nnx.update(cc_model, nnx.GraphState.merge(cc_params, cc_rest))
 
-    # return new_csp1_state, new_cc_state, loss
+    # return loss
+
+
+@nnx.jit
+def cyberspine_v2_train_step(model,
+                             optimizer,
+                            #  action_batch: jp.ndarray,
+                             obs_batch: jp.ndarray,
+                             obs_hat_batch:jp.ndarray):
+    
+    def loss_fn(model):
+        loss = jp.mean((obs_hat_batch - obs_batch) ** 2)
+        return loss
+    
+    loss, grads = nnx.value_and_grad(loss_fn)(model)
+    optimizer.update(grads)  # In place updates.
+
+    # _, params, rest = nnx.split(model, nnx.Param, ...)
+    # params = jax.tree.map(lambda p, g: p - 0.1 * g, params, grads)
+    # nnx.update(model, nnx.GraphState.merge(params, rest))
+    
+    return loss
+    
